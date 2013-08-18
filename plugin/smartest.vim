@@ -48,26 +48,6 @@ endfunction
 " line 12.
 "
 " We try to find the same for Minitest tests.
-function! RunTestFile(...)
-  if a:0
-    let command_suffix = a:1
-  else
-    let command_suffix = ""
-  endif
-
-  " Run the tests for the previously-marked file.
-  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\)')
-
-  if in_test_file >= 0
-    call SetTestFile(command_suffix)
-  elseif !exists("t:grb_test_file")
-    :echo "Vim: I don't know what file to test :("
-    return
-  end
-
-  call RunTests(t:grb_test_file . t:grb_test_line)
-endfunction
-
 function! RunNearestTest()
   let spec_line_number = line('.')
   call RunTestFile(":" . spec_line_number)
@@ -141,7 +121,7 @@ function! RunTests(filename)
       " Tests in Rails have different dependencies that we have to check
       let rails_framework = ""
       if globpath(".", "rails.gemspec") > -1
-        let rails_framework = substitute(expand("%"), '/test/.*', '', '')
+        let rails_framework = substitute(a:filename, '/test/.*', '', '')
         let dependencies_path = rails_framework . "/lib:" . rails_framework . "/test"
       endif
 
@@ -151,11 +131,13 @@ function! RunTests(filename)
       let test_method = ""
       if isolated_spec > 0
         let current_line = cursor_line
-        while current_line > 0
+        while current_line > cursor_line - 50
           " matches something like 'def test_form_for', then removes 'def '
-          let test_method = matchstr(getline(current_line), 'def test_.*')
+          let line_string = GetLineFromFile(current_line, filename_without_line_number)
+          let test_method = matchstr(line_string, 'def test_.*')
           let test_method = substitute(test_method, 'def ', '', '')
 
+          " If it finds a test method, gets out of the loop
           if test_method != ""
             break
           endif
@@ -169,7 +151,7 @@ function! RunTests(filename)
       endif
 
       if test_method != ""
-        :silent !echo "Running isolated test"
+        :exec ":silent !echo Running isolated test: " . test_method
       else
         :silent !echo "Running all tests"
       endif
@@ -213,4 +195,8 @@ function! RunTests(filename)
       exec ":!rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
     end
   end
+endfunction
+
+function! GetLineFromFile(line, filename)
+  return system('sed -n ' . a:line . 'p ' . a:filename)
 endfunction
