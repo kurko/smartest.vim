@@ -34,16 +34,19 @@ If you're testing Javascript, smartest:
     map <leader>t :call RunTestFile()<cr>
     map <leader>r :call RunNearestTest()<cr>
 
-`<leader>t` will run all test in current file, while `<leader>r` will run only
-the test under the cursor.
+Here, `<leader>t` would run all tests in the current file,
+while `<leader>r` would run only the test under the cursor.
 
-### Bonus 1
+### Bonus feature 1
 
-If you're test file **user_spec.rb** and runs `<leader>t` (considering the mappings above),
+If your test file **user_spec.rb** and runs `<leader>t` (considering the mappings above),
 it'll run it. If you go to file **user.rb** (not a test file) and runs `<leader>t`
 again, it'll run the last test file run (idea by Gary Bernhardt).
 
-### Bonus 2
+This means you don't need to have your test file buffer opened to run it. You
+can just code and call the tests.
+
+### Bonus feature 2
 
 If you use `RunNearestTest()`, which is `<leader>r` for me, it'll run only the
 test under the cursor, even on **Minitest**.
