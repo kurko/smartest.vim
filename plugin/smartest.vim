@@ -89,7 +89,7 @@ function! RunTests(filename)
     if filereadable("Gemfile") && match(readfile("Gemfile"), "konacha") >= 0
 
       " Konacha with Zeus
-      if filereadable("zeus.json")
+      if glob(".zeus.sock") != ""
         :silent !echo "Konacha with zeus"
         exec ":!zeus rake konacha:run SPEC=" . filename_for_spec
 
@@ -174,7 +174,7 @@ function! RunTests(filename)
         exec ":!spring rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
 
       " Zeus
-      elseif filereadable("zeus.json") && filereadable("Gemfile")
+      elseif glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
         :silent !echo "Using zeus"
         exec ":!zeus rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
 
