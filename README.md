@@ -23,8 +23,10 @@ so if you in an `actionview` file, it'll run
 
 If you're testing Javascript, smartest:
 
-* checks if it's a Konacha spec and runs it using zeus or bundler
+* checks if it's a Konacha spec and runs it using Zeus or Bundler
 (whichever is available).
+* checks if `phantomjs` can be used based on the presence of `tests/runner.js`.
+  In case it's QUnit, it'll run only the current file.
 * runs `rake` if it doesn't know what to do (e.g `QUnit`)
 
 ### Usage
