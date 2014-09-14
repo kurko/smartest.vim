@@ -99,6 +99,43 @@ function! RunTests(filename)
         exec ":!bundle exec rake konacha:run SPEC=" . filename_for_spec
       endif
 
+    " PhantomJS with NPM/Broccoli/Ember CLI
+    "
+    " If there's a tests/runner.js file
+    elseif filereadable("tests/runner.js")
+      if filereadable("package.json") && match(readfile("package.json"), "build-test") >= 0
+        let module_line_number = 1 + match(readfile(expand('%')), "module(")
+        let module_line_string = GetLineFromFile(module_line_number, expand('%'))
+        let module_name = substitute(module_line_string, "module('", '', '')
+        let module_name = substitute(module_name, 'module("', '', '')
+        let module_name = substitute(module_name, "', {", '', '')
+        let module_name = substitute(module_name, '", {', '', '')
+        let module_name = substitute(module_name, ' ', '%20', 'g')
+        "let module_name = substitute(module_name, '/', '%2F', 'g')
+
+        silent exec ":!echo Running specs with PhantomJS for current module"
+        let message = "Running phantomjs test_build/tests/runner.js test_build/tests/index.html?module=" . module_name
+        let l:command = "phantomjs test_build/tests/runner.js test_build/tests/index.html?module=" . module_name
+        silent exec ":!echo " . shellescape(l:command, 2)
+
+        let l:result = system("rm -rf test_build && node_modules/broccoli-cli/bin/broccoli build test_build && " . command)
+        if match(l:result, "\n$") < 0
+          let l:result = l:result . "\n"
+        endif
+        let l:result_list = split(l:result, "\n")
+
+        let l:index = 1
+        for i in l:result_list
+          if len(l:result_list) == l:index
+            exec ":!echo " . shellescape(i, 1)
+          else
+            silent exec ":!echo " . shellescape(i, 1)
+          endif
+          let l:index += 1
+        endfor
+        redraw!
+      endif
+
     " Everything else (QUnit)
     else
       "Rake
