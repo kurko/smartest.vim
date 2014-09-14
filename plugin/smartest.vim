@@ -85,7 +85,9 @@ function! RunTests(filename)
   if match(a:filename, '\(._test.js\|_spec.js\)') >= 0
 
     let filename_for_spec = substitute(a:filename, "spec/javascripts/", "", "")
-    "Konacha
+    " Within a Ruby on Rails project
+    "
+    " Konacha
     if filereadable("Gemfile") && match(readfile("Gemfile"), "konacha") >= 0
 
       " Konacha with Zeus
@@ -103,44 +105,12 @@ function! RunTests(filename)
     "
     " If there's a tests/runner.js file
     elseif filereadable("tests/runner.js")
-      if filereadable("package.json") && match(readfile("package.json"), "build-test") >= 0
-        let module_line_number = 1 + match(readfile(expand('%')), "module(")
-        let module_line_string = GetLineFromFile(module_line_number, expand('%'))
-        let module_name = substitute(module_line_string, "module('", '', '')
-        let module_name = substitute(module_name, 'module("', '', '')
-        let module_name = substitute(module_name, "', {", '', '')
-        let module_name = substitute(module_name, '", {', '', '')
-        let module_name = substitute(module_name, ' ', '%20', 'g')
-        "let module_name = substitute(module_name, '/', '%2F', 'g')
-
-        silent exec ":!echo Running specs with PhantomJS for current module"
-        let message = "Running phantomjs test_build/tests/runner.js test_build/tests/index.html?module=" . module_name
-        let l:command = "phantomjs test_build/tests/runner.js test_build/tests/index.html?module=" . module_name
-        silent exec ":!echo " . shellescape(l:command, 2)
-
-        let l:result = system("rm -rf test_build && node_modules/broccoli-cli/bin/broccoli build test_build && " . command)
-        if match(l:result, "\n$") < 0
-          let l:result = l:result . "\n"
-        endif
-        let l:result_list = split(l:result, "\n")
-
-        let l:index = 1
-        for i in l:result_list
-          if len(l:result_list) == l:index
-            exec ":!echo " . shellescape(i, 1)
-          else
-            silent exec ":!echo " . shellescape(i, 1)
-          endif
-          let l:index += 1
-        endfor
-        redraw!
-      endif
+      call RunJsWithPhantomJs()
 
     " Everything else (QUnit)
     else
       "Rake
-      :silent !echo "Javascript test, running rake"
-      exec ":!rake"
+      :silent !echo "I don't know how to run these JS tests :["
     endif
 
   " RUBY
@@ -236,4 +206,58 @@ endfunction
 
 function! GetLineFromFile(line, filename)
   return system('sed -n ' . a:line . 'p ' . a:filename)
+endfunction
+
+function! RunJsWithPhantomJs()
+  " QUnit tests have a module() function. Here we figure that out and run only
+  " the current file.
+  let module_name = ""
+
+  silent exec ":!echo Running specs with PhantomJS for current module"
+  let l:command = "phantomjs test_build/tests/runner.js test_build/tests/index.html"
+
+  " QUNIT?
+  if filereadable("tests/index.html") && match(readfile("tests/index.html"), "qunit") >= 0
+    let module_line_number = 1 + match(readfile(expand('%')), "module(")
+    let module_line_string = GetLineFromFile(module_line_number, expand('%'))
+    let module_name = substitute(module_line_string, "module('", '', '')
+    let module_name = substitute(module_name, 'module("', '', '')
+    let module_name = substitute(module_name, "', {", '', '')
+    let module_name = substitute(module_name, '", {', '', '')
+    let module_name = substitute(module_name, ' ', '%20', 'g')
+    "let module_name = substitute(module_name, '/', '%2F', 'g')
+
+    let l:command = l:command . "?module=" . module_name
+  endif
+
+  "if filereadable("Brocfile.js") && match(readfile("Brocfile.js"), "ember-cli") >= 0
+  "else
+  if filereadable("Brocfile.js") && filereadable("node_modules/broccoli-cli/bin/broccoli")
+
+    let l:final_command = "rm -rf test_build && node_modules/broccoli-cli/bin/broccoli build test_build && " . l:command
+  else
+    silent exec ":!echo " . shellescape("Don't know how to run this :(", 1)
+    return 0
+  endif
+
+  let message = "Running " . l:command
+  silent exec ":!echo " . shellescape(l:command, 2)
+
+  let l:result = system(l:final_command)
+
+  if match(l:result, "\n$") < 0
+    let l:result = l:result . "\n"
+  endif
+  let l:result_list = split(l:result, "\n")
+
+  let l:index = 1
+  for i in l:result_list
+    if len(l:result_list) == l:index
+      exec ":!echo " . shellescape(i, 1)
+    else
+      silent exec ":!echo " . shellescape(i, 1)
+    endif
+    let l:index += 1
+  endfor
+  redraw!
 endfunction
