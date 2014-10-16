@@ -117,19 +117,23 @@ function! RunTests(filename)
   elseif match(a:filename, '\(._test.rb\|_spec.rb\)') >= 0
 
     let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
+
     " Minitest?
     if match(a:filename, '\(_test.rb\)') != -1
 
       let ruby_command = ":!ruby -I"
       let dependencies_path = "lib/"
+      let rails_app = ""
+      let rails_framework = ""
 
       " Rails framework codebase itself?
       "
       " Tests in Rails have different dependencies that we have to check
-      let rails_framework = ""
-      if globpath(".", "rails.gemspec") > -1
+      if (globpath(".", "rails.gemspec") == "" ) == 0
         let rails_framework = substitute(a:filename, '/test/.*', '', '')
         let dependencies_path = rails_framework . "/lib:" . rails_framework . "/test"
+      elseif match(readfile("Gemfile.lock"), "railties") >= 0
+        let rails_app = substitute(a:filename, '/test/.*', '', '')
       endif
 
       " Running isolated test
@@ -155,24 +159,33 @@ function! RunTests(filename)
 
       if rails_framework != ""
         :silent !echo "Testing rails/rails project"
+      else if rails_app != ""
+        :silent !echo "Testing rails app with minitest"
       endif
 
       if test_method != ""
         :exec ":silent !echo Running isolated test: " . test_method
       else
-        :silent !echo "Running all tests"
+        :exec ":silent !echo Running all tests for " . filename_without_line_number
       endif
 
-      let test_command = ruby_command
-      let test_command = test_command . " " . dependencies_path
-      let test_command = test_command . " " . filename_without_line_number
-      if test_method != ""
-        let test_command = test_command . " -n " . test_method
+      let test_command = ""
+      if rails_framework != ""
+        let test_command = ruby_command
+        let test_command = test_command . " " . dependencies_path
+        let test_command = test_command . " " . filename_without_line_number
+        if test_method != ""
+          let test_command = test_command . " -n " . test_method
+        endif
+      elseif rails_app != ""
+        let test_command = ":!spring rake test " . filename_without_line_number
       endif
+
+      ":exec ":silent !echo ha " . test_command
 
       exec test_command
 
-    " Bundler
+    " Bundler & RSpec
     elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
 
       " Spring (gem like Zeus, to make things faster)
