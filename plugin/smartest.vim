@@ -124,6 +124,7 @@ function! RunTests(filename)
       let ruby_command = ":!ruby -I"
       let dependencies_path = "lib/"
       let rails_app = ""
+      let gem_development = ""
       let rails_framework = ""
 
       " Rails framework codebase itself?
@@ -133,7 +134,11 @@ function! RunTests(filename)
         let rails_framework = substitute(a:filename, '/test/.*', '', '')
         let dependencies_path = rails_framework . "/lib:" . rails_framework . "/test"
       elseif match(readfile("Gemfile.lock"), "railties") >= 0
-        let rails_app = substitute(a:filename, '/test/.*', '', '')
+        if (globpath(".", "app") == "" ) == 0
+          let rails_app = substitute(a:filename, '/test/.*', '', '')
+        else
+          let gem_development = substitute(a:filename, '/test/.*', '', '')
+        endif
       endif
 
       " Running isolated test
@@ -179,6 +184,8 @@ function! RunTests(filename)
         endif
       elseif rails_app != ""
         let test_command = ":!spring rake test " . filename_without_line_number
+      elseif gem_development != ""
+        let test_command = ":!rake TEST=" . filename_without_line_number
       endif
 
       ":exec ":silent !echo ha " . test_command

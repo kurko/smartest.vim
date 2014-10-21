@@ -2,8 +2,8 @@
 
 Make your Vim smart when running your tests.
 
-In your **Rails** project with `RSpec`, it'll run the current test file the
-fastest way possible:
+In your **Rails** project, it'll run the current test file the
+fastest way possible using either RSpec or Minitest:
 
 * Runs current file with `Spring` gem if you have it running, or
 * Runs current file with `zeus` if you have it running, or
@@ -12,6 +12,7 @@ fastest way possible:
 means it needs `bundle exec`), or
 * uses pure RSpec (no `bundle exec`) other wise. This is useful for people like
 me that don't like running specs with Bundler when it's not needed.
+* runs `spring rake test $current_file` in case of Minitest
 
 In your **Ruby** project using minitest, it:
 
@@ -20,6 +21,7 @@ In your **Ruby** project using minitest, it:
 so if you in an `actionview` file, it'll run
 `ruby -Iactionview/lib:actionview/test $current_file`, or
 * Runs `ruby -Ilib $current_file`
+* runs `rake TEST=$current_file` when developing a gem with Minitest.
 
 If you're testing Javascript, smartest:
 
