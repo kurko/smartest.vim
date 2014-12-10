@@ -152,6 +152,19 @@ function! RunTests(filename)
           let line_string = GetLineFromFile(current_line, filename_without_line_number)
           let test_method = matchstr(line_string, 'def test_.*')
           let test_method = substitute(test_method, 'def ', '', '')
+          if test_method == ""
+            let test_method = matchstr(line_string, "it ['\"].*['\"] do")
+            let test_method = substitute(test_method, 'it "', '', '')
+            let test_method = substitute(test_method, '" do', '', '')
+            let test_method = substitute(test_method, "it '", '', '')
+            let test_method = substitute(test_method, "' do", '', '')
+
+            if test_method != ""
+              let test_method = substitute(test_method, " ", ".\+", "g")
+              let test_method = substitute(test_method, "\\$", ".", "g")
+              let test_method = "/" . test_method . "$/"
+            endif
+          endif
 
           " If it finds a test method, gets out of the loop
           if test_method != ""
@@ -183,7 +196,13 @@ function! RunTests(filename)
           let test_command = test_command . " -n " . test_method
         endif
       elseif rails_app != ""
-        let test_command = ":!spring rake test " . filename_without_line_number
+
+        " It's a Rails app and we want to run an isolated test
+        if test_method != ""
+          let test_command = ":!time ruby -Itest:lib " . filename_without_line_number . " -n " . test_method
+        else
+          let test_command = ":!spring rake test " . filename_without_line_number
+        endif
       elseif gem_development != ""
         let test_command = ":!rake TEST=" . filename_without_line_number
       endif
