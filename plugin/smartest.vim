@@ -199,7 +199,7 @@ function! RunTests(filename)
 
         " It's a Rails app and we want to run an isolated test
         if test_method != ""
-          let test_command = ":!time ruby -Itest:lib " . filename_without_line_number . " -n " . test_method
+          let test_command = ":!spring rake test " . filename_without_line_number . " " . test_method
         else
           let test_command = ":!spring rake test " . filename_without_line_number
         endif
