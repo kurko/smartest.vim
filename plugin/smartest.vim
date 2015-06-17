@@ -66,8 +66,8 @@ endfunction
 
 function! RunTests(filename)
 
-  " Save the current file and run tests for the given filename
   :w
+  " Save the current file and run tests for the given filename
   :silent !echo;echo;echo;echo;echo;echo;echo;echo;echo;echo
   :silent !echo;echo;echo;echo;echo;echo;echo;echo;echo;echo
   :silent !echo;echo;echo;echo;echo;echo;echo;echo;echo;echo
@@ -115,14 +115,13 @@ function! RunTests(filename)
 
   " RUBY
   elseif match(a:filename, '\(._test.rb\|_spec.rb\)') >= 0
-
     let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
 
     " Minitest?
     if match(a:filename, '\(_test.rb\)') != -1
-
+      let ruby_command_with_bundler = ":!bundle exec ruby -I"
       let ruby_command = ":!ruby -I"
-      let dependencies_path = "lib/"
+      let dependencies_path = "lib/:test/"
       let rails_app = ""
       let gem_development = ""
       let rails_framework = ""
@@ -134,6 +133,7 @@ function! RunTests(filename)
         let rails_framework = substitute(a:filename, '/test/.*', '', '')
         let dependencies_path = rails_framework . "/lib:" . rails_framework . "/test"
       elseif match(readfile("Gemfile.lock"), "railties") >= 0
+
         if (globpath(".", "app") == "" ) == 0
           let rails_app = substitute(a:filename, '/test/.*', '', '')
         else
@@ -179,6 +179,8 @@ function! RunTests(filename)
         :silent !echo "Testing rails/rails project"
       else if rails_app != ""
         :silent !echo "Testing rails app with minitest"
+      else
+        :silent !echo "Testing plain Ruby app"
       endif
 
       if test_method != ""
@@ -205,6 +207,13 @@ function! RunTests(filename)
         endif
       elseif gem_development != ""
         let test_command = ":!rake TEST=" . filename_without_line_number
+      else
+        let test_command = ruby_command_with_bundler
+        let test_command = test_command . " " . dependencies_path
+        let test_command = test_command . " " . filename_without_line_number
+        if test_method != ""
+          let test_command = test_command . " -n " . test_method
+        endif
       endif
 
       ":exec ":silent !echo ha " . test_command
