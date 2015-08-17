@@ -27,7 +27,7 @@ function! RunTestFile(...)
   endif
 
   " Run the tests for the previously-marked file.
-  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\)')
+  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\|_test.exs\|_test.ex\)')
 
   if in_test_file >= 0
     call SetTestFile(command_suffix)
@@ -248,6 +248,17 @@ function! RunTests(filename)
     else
       :silent !echo "Using vanilla rspec outside Rails"
       exec ":!rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+    end
+  " ELIXIR
+  elseif match(a:filename, '\(._test.ex\|_test.exs\)') >= 0
+    if match(a:filename, '\(._test.exs\)') >= 0
+      " Mix
+      :silent !echo "Using ExUnit with Mix"
+      exec ":!mix test " . a:filename
+    else
+      " ExUnit
+      :silent !echo "Using ExUnit outside Mix"
+      exec ":!elixir " . a:filename
     end
   end
 endfunction
