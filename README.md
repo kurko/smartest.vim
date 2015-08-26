@@ -23,13 +23,19 @@ so if you in an `actionview` file, it'll run
 * Runs `ruby -Ilib $current_file`
 * runs `rake TEST=$current_file` when developing a gem with Minitest.
 
-If you're testing Javascript, smartest:
+If you're testing **Javascript**, smartest:
 
 * checks if it's a Konacha spec and runs it using Zeus or Bundler
 (whichever is available).
 * checks if `phantomjs` can be used based on the presence of `tests/runner.js`.
   In case it's QUnit, it'll run only the current file.
 * runs `rake` if it doesn't know what to do (e.g `QUnit`)
+
+Case you're running **Elixir** code, smartest will:
+* Run the test with `Mix`, case you used it's extension convention under a Mix
+project;
+* Run the test with `elixir`, in which case you'll need to add `ExUnit.start` to
+the top of your test.
 
 ### Usage
 
