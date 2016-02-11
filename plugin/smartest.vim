@@ -27,7 +27,7 @@ function! RunTestFile(...)
   endif
 
   " Run the tests for the previously-marked file.
-  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\|_test.exs\|_test.ex\)')
+  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\)')
 
   if in_test_file >= 0
     call SetTestFile(command_suffix)
@@ -260,6 +260,10 @@ function! RunTests(filename)
       :silent !echo "Using ExUnit outside Mix"
       exec ":!elixir " . a:filename
     end
+  " SCALA
+  elseif match(a:filename, '\(.Spec.scala\|Test.scala\)') >= 0
+    :silent !echo "Using activator test-only option"
+    exec ":!activator 'testOnly *." . expand('%:t:r') . "'"
   end
 endfunction
 
