@@ -221,18 +221,18 @@ function! RunTests(filename)
       exec test_command
 
     " Bundler & RSpec
-    elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
-
-      " Spring (gem like Zeus, to make things faster)
-      if match(system('spring status'), 'Spring is running') >= 0
-        :silent !echo "Using Spring"
-        exec ":!spring rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+    elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|rails_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
 
       " Zeus
-      elseif glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
+      if glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
         :silent !echo "Using zeus"
         exec ":!zeus rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
 
+      " Spring (gem like Zeus, to make things faster)
+      elseif match(system('spring status'), 'Spring is running') >= 0
+        :silent !echo "Using Spring"
+        exec ":!spring rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+        "
       " bundle exec
       elseif filereadable("Gemfile")
         :silent !echo "Using bundle exec"
