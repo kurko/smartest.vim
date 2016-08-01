@@ -177,7 +177,7 @@ function! RunTests(filename)
 
       if rails_framework != ""
         :silent !echo "Testing rails/rails project"
-      else if rails_app != ""
+      elseif rails_app != ""
         :silent !echo "Testing rails app with minitest"
       else
         :silent !echo "Testing plain Ruby app"
