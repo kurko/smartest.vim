@@ -113,6 +113,20 @@ function! RunTests(filename)
       :silent !echo "I don't know how to run these JS tests :["
     endif
 
+  " CUCUMBER
+  elseif match(a:filename, '\(.feature\)') >= 0
+    let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
+
+    if filereadable("Gemfile")
+      let command = "bundle exec cucumber " . a:filename
+      :exec ":silent !echo Running: " . command
+      exec ":!" . command
+    else
+      let command = "cucumber " . a:filename
+      :exec ":silent !echo Running vanilla Cucumber: " . command
+      exec ":!" . command
+    endif
+
   " RUBY
   elseif match(a:filename, '\(._test.rb\|_spec.rb\)') >= 0
     let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
