@@ -235,7 +235,8 @@ function! RunTests(filename)
       exec test_command
 
     " Bundler & RSpec
-    elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|rails_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
+    " elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|rails_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
+    elseif match(filename_without_line_number, '\(_spec.rb\)') >= 0
 
       " Zeus
       if glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
