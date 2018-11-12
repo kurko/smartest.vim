@@ -246,8 +246,13 @@ function! RunTests(filename)
       " Spring (gem like Zeus, to make things faster)
       elseif match(system('spring status'), 'Spring is running') >= 0
         :silent !echo "Using Spring"
-        exec ":!spring rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
-        "
+        exec ":!spring rspec --color --format progress --no-drb --order random " . a:filename
+
+      " Spring within bundler
+      elseif match(system('bundle exec spring status'), 'Spring is running') >= 0
+        :silent !echo "Using Spring with bundler"
+        exec ":!bundle exec spring rspec --color --format progress --no-drb --order random " . a:filename
+
       " bundle exec
       elseif filereadable("Gemfile")
         :silent !echo "Using bundle exec"
