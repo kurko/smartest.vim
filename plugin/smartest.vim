@@ -31,12 +31,12 @@ function! RunTestFile(...)
 
   if in_test_file >= 0
     call SetTestFile(command_suffix)
-  elseif !exists("t:grb_test_file")
+  elseif !exists("g:grb_test_file")
     :echo "Vim: I don't know what file to test :("
     return
   end
 
-  call RunTests(t:grb_test_file . t:grb_test_line)
+  call RunTests(g:grb_test_file . g:grb_test_line)
 endfunction
 
 " RunNearestTest()
@@ -56,12 +56,12 @@ endfunction
 function! SetTestFile(...)
   " Set the spec file that tests will be run for.
   if a:0 && a:1 != ""
-    let t:grb_test_line = a:1
+    let g:grb_test_line = a:1
   else
-    let t:grb_test_line = ""
+    let g:grb_test_line = ""
   endif
 
-  let t:grb_test_file = @%
+  let g:grb_test_file = @%
 endfunction
 
 function! RunTests(filename)
