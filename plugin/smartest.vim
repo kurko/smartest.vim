@@ -81,8 +81,13 @@ function! RunTests(filename)
   let isolated_spec = match(a:filename, ':\d\+$') > 0
   let cursor_line = substitute(matchstr(a:filename, ':\d\+$'), ":", "", "")
 
+  let smartest_test_description = ""
+  let smartest_test_context = ""
+  let smartest_test_command = ""
+
   " JAVASCRIPT
   if match(a:filename, '\(._test.js\|_spec.js\)') >= 0
+    let smartest_test_context = "javascript"
 
     let filename_for_spec = substitute(a:filename, "spec/javascripts/", "", "")
     " Within a Ruby on Rails project
@@ -92,13 +97,13 @@ function! RunTests(filename)
 
       " Konacha with Zeus
       if glob(".zeus.sock") != ""
-        :silent !echo "Konacha with zeus"
-        exec ":!zeus rake konacha:run SPEC=" . filename_for_spec
+        let smartest_test_description = "Konacha with zeus"
+        let test_command_from_file = "zeus rake konacha:run SPEC=" . filename_for_spec
 
       " Konacha with bundle exec
       else
-        :silent !echo "Konacha with bundle exec"
-        exec ":!bundle exec rake konacha:run SPEC=" . filename_for_spec
+        let smartest_test_description = "Konacha with bundle exec"
+        let test_command_from_file = "bundle exec rake konacha:run SPEC=" . filename_for_spec
       endif
 
     " PhantomJS with NPM/Broccoli/Ember CLI
@@ -110,26 +115,26 @@ function! RunTests(filename)
     " Everything else (QUnit)
     else
       "Rake
-      :silent !echo "I don't know how to run these JS tests :["
+      let smartest_test_description = "I don't know how to run these JS tests :["
     endif
 
   " CUCUMBER
   elseif match(a:filename, '\(.feature\)') >= 0
     let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
+    let smartest_test_context = "cucumber"
 
     if filereadable("Gemfile")
-      let command = "bundle exec cucumber " . a:filename
-      :exec ":silent !echo Running: " . command
-      exec ":!" . command
+      let smartest_test_description = "bundle exec cucumber " . a:filename
+      let smartest_test_command = "bundle exec cucumber " . a:filename
     else
-      let command = "cucumber " . a:filename
-      :exec ":silent !echo Running vanilla Cucumber: " . command
-      exec ":!" . command
+      let smartest_test_description = "cucumber " . a:filename
+      let smartest_test_command = "cucumber " . a:filename
     endif
 
   " RUBY
   elseif match(a:filename, '\(._test.rb\|_spec.rb\)') >= 0
     let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
+    let smartest_test_context = "ruby"
 
     " Minitest?
     if match(a:filename, '\(_test.rb\)') != -1
@@ -190,17 +195,17 @@ function! RunTests(filename)
       endif
 
       if rails_framework != ""
-        :silent !echo "Testing rails/rails project"
+        let smartest_test_description = "Testing rails/rails project"
       elseif rails_app != ""
-        :silent !echo "Testing rails app with minitest"
+        let smartest_test_description = "Testing rails app with minitest"
       else
-        :silent !echo "Testing plain Ruby app"
+        let smartest_test_description = "Testing plain Ruby app"
       endif
 
       if test_method != ""
-        :exec ":silent !echo Running isolated test: " . test_method
+        let smartest_test_description = "\nRunning isolated test: " . test_method
       else
-        :exec ":silent !echo Running all tests for " . filename_without_line_number
+        let smartest_test_description = "\nRunning all tests for " . filename_without_line_number
       endif
 
       let test_command = ""
@@ -230,61 +235,89 @@ function! RunTests(filename)
         endif
       endif
 
-      ":exec ":silent !echo ha " . test_command
-
-      exec test_command
+      " exec test_command
 
     " Bundler & RSpec
     " elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|rails_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
     elseif match(filename_without_line_number, '\(_spec.rb\)') >= 0
+      let smartest_test_context = "ruby"
 
       " Zeus
       if glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
-        :silent !echo "Using zeus"
-        exec ":!zeus rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_description = "Using zeus"
+        let test_command_from_file = "zeus rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
 
       " Spring (gem like Zeus, to make things faster)
       elseif match(system('spring status'), 'Spring is running') >= 0
-        :silent !echo "Using Spring"
-        exec ":!spring rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_description = "Using Spring"
+        let test_command_from_file = "spring rspec --color --format progress --no-drb --order random " . a:filename
 
       " Spring within bundler
       elseif match(system('bundle exec spring status'), 'Spring is running') >= 0
-        :silent !echo "Using Spring with bundler"
-        exec ":!bundle exec spring rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_description = "Using Spring with bundler"
+        let test_command_from_file = "bundle exec spring rspec --color --format progress --no-drb --order random " . a:filename
 
       " bundle exec
       elseif filereadable("Gemfile")
-        :silent !echo "Using bundle exec"
-        exec ":!bundle exec rspec --color --order random " . a:filename
+        let smartest_test_description = "Using bundle exec"
+        let smartest_test_command = "bundle exec rspec --color --order random " . a:filename
 
       " pure rspec
       else
-        :silent !echo "Using vanilla rspec"
-        exec ":!rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_description = "Using vanilla rspec"
+        let test_command_from_file = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
       end
 
     " Everything else
     else
-      :silent !echo "Using vanilla rspec outside Rails"
-      exec ":!rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+      let smartest_test_description = "Using vanilla rspec outside Rails"
+      let test_command_from_file = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
     end
   " ELIXIR
   elseif match(a:filename, '\(._test.ex\|_test.exs\)') >= 0
+    let smartest_test_context = "elixir"
+
     if match(a:filename, '\(._test.exs\)') >= 0
       " Mix
-      :silent !echo "Using ExUnit with Mix"
-      exec ":!mix test " . a:filename
+      let smartest_test_description = "Using ExUnit with Mix"
+      let test_command_from_file = "mix test " . a:filename
     else
       " ExUnit
-      :silent !echo "Using ExUnit outside Mix"
-      exec ":!elixir " . a:filename
+      let smartest_test_description = "Using ExUnit outside Mix"
+      let test_command_from_file = "elixir " . a:filename
     end
   " SCALA
   elseif match(a:filename, '\(.Spec.scala\|Test.scala\)') >= 0
-    :silent !echo "Using activator test-only option"
-    exec ":!activator 'testOnly *." . expand('%:t:r') . "'"
+    let smartest_test_context = "scala"
+
+    let smartest_test_description = "Using activator test-only option"
+    let test_command_from_file = "activator 'testOnly *." . expand('%:t:r') . "'"
   end
+
+
+  " If there's any file .smartest.*, then we expect to only use those types of
+  " files and we will show an error in case some is missing.
+  if glob('.smartest.*') !=#""
+    if filereadable(".smartest." . smartest_test_context)
+      let test_command_from_file = readfile(".smartest." . smartest_test_context)[0]
+
+      " Replaces $smartest_test_command in the file with whatever smartest figured out as
+      " expected.
+      let final_test_command = substitute(test_command_from_file, "$smartest_test_command", smartest_test_command, "")
+      let final_test_command = substitute(final_test_command, "$filename", a:filename, "")
+
+      silent exec ":!echo " . smartest_test_description
+      " shellescape will write with quotes to stdout
+      silent exec ":!echo Running: " . shellescape(final_test_command, 1)
+      exec ":!" . final_test_command
+    else
+      echo "Don't know how to run tests. Define .smartest." . smartest_test_context
+    endif
+  else
+    silent exec ":!echo " . smartest_test_description
+    exec ":!" . smartest_test_command
+  endif
+
 endfunction
 
 function! GetLineFromFile(line, filename)
