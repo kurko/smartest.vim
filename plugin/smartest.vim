@@ -27,7 +27,7 @@ function! RunTestFile(...)
   endif
 
   " Run the tests for the previously-marked file.
-  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\)')
+  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\|Test.java\)')
 
   if in_test_file >= 0
     call SetTestFile(command_suffix)
@@ -292,6 +292,28 @@ function! RunTests(filename)
 
     let smartest_test_description = "Using activator test-only option"
     let test_command_from_file = "activator 'testOnly *." . expand('%:t:r') . "'"
+
+  " JAVA
+  "
+  " We don't run the test itself here, but log the file name and test
+  elseif match(a:filename, '\(Test.java\)') >= 0
+    let smartest_test_context = "java"
+
+    let smartest_test_description = "Using Java context"
+
+    "let test_class_name = ''
+    "let file = readfile(expand("%:p"))
+    "for line in file
+    "  let matched_class_name = matchstr(line, 'public class \zs\([A-Za-z]*Test\)\ze.*')
+    "  if(!empty(matched_class_name))
+    "    let test_class_name = matched_class_name
+    "  endif
+    "endfor
+
+    "echo "X" . test_class_name
+    " let test_command_from_file = "-Dtest=" . expand('%:t:r') . "'"
+    let class_name = "-Dtest=" . expand('%:t:r') . "'"
+    let target_parameters = "-Dtest=" . expand('%:t:r') . "'"
   end
 
 
@@ -346,8 +368,6 @@ function! RunJsWithPhantomJs()
     let l:command = l:command . "?module=" . module_name
   endif
 
-  "if filereadable("Brocfile.js") && match(readfile("Brocfile.js"), "ember-cli") >= 0
-  "else
   if filereadable("Brocfile.js") && filereadable("node_modules/broccoli-cli/bin/broccoli")
 
     let l:final_command = "rm -rf test_build && node_modules/broccoli-cli/bin/broccoli build test_build && " . l:command
