@@ -325,13 +325,27 @@ function! RunTests(filename)
 
       " Replaces $smartest_test_command in the file with whatever smartest figured out as
       " expected.
-      let final_test_command = substitute(test_command_from_file, "$smartest_test_command", smartest_test_command, "")
-      let final_test_command = substitute(final_test_command, "$filename", a:filename, "")
+      let final_test_command = substitute(test_command_from_file, "$smartest_test_command", smartest_test_command, "g")
+      let final_test_command = substitute(final_test_command, "$filename", a:filename, "g")
 
-      silent exec ":!echo " . smartest_test_description
+      " These lines were removed because when the user gets back to Vim, they
+      " would have to press a button to get back to code.
+      "
+      " Removing this code made the flow much snappier when the user is taken to
+      " another terminal window. When they come back, they're right at the code
+      " again.
+      "
+      " In case you want to see a message telling the user what's going on,
+      " uncomment these lines.
+      "
+      " silent exec ":!echo " . smartest_test_description
       " shellescape will write with quotes to stdout
-      silent exec ":!echo Running: " . shellescape(final_test_command, 1)
-      exec ":!" . final_test_command
+      " silent exec "!echo Running: " . shellescape(final_test_command, 1)
+      " exec ":!" . final_test_command
+      "
+
+      silent exec "!" . final_test_command
+      redraw!
     else
       echo "Don't know how to run tests. Define .smartest." . smartest_test_context
     endif
