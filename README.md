@@ -71,11 +71,16 @@ For example, for a Ruby project, including Rails projects, create the file
 `.smartest.ruby` and write in it what you want Smartest to run. Ideally put it
 in `.gitignore`.
 
-For example, if you're using Docker and is running the bash in a Tmux pane (e.g
-1), you could press `<leader>r` and have it run it on the pane 1. Define
+For example, if you're using Docker and is running the bash in a Tmux window (e.g
+1), you could press `<leader>r` and have it run it on window 1. Define
 `.smartest.ruby`:
 
     tmux send-keys -t 1 "time rspec --color --order random $filename" ENTER
+
+or a more complex example, checking that the first window is actually in a
+`test` environment and selecting that window:
+
+    tmux send-keys -t 1 "[ \"\$RAILS_ENV\" == \"test\" ] && time rspec --color --order random $filename" ENTER; tmux select-window -t 1
 
 These are the files you can use:
 
