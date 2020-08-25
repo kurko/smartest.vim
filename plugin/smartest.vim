@@ -98,12 +98,12 @@ function! RunTests(filename)
       " Konacha with Zeus
       if glob(".zeus.sock") != ""
         let smartest_test_description = "Konacha with zeus"
-        let test_command_from_file = "zeus rake konacha:run SPEC=" . filename_for_spec
+        let smartest_test_command = "zeus rake konacha:run SPEC=" . filename_for_spec
 
       " Konacha with bundle exec
       else
         let smartest_test_description = "Konacha with bundle exec"
-        let test_command_from_file = "bundle exec rake konacha:run SPEC=" . filename_for_spec
+        let smartest_test_command = "bundle exec rake konacha:run SPEC=" . filename_for_spec
       endif
 
     " PhantomJS with NPM/Broccoli/Ember CLI
@@ -245,17 +245,17 @@ function! RunTests(filename)
       " Zeus
       if glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
         let smartest_test_description = "Using zeus"
-        let test_command_from_file = "zeus rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_command = "zeus rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
 
       " Spring (gem like Zeus, to make things faster)
       elseif match(system('spring status'), 'Spring is running') >= 0
         let smartest_test_description = "Using Spring"
-        let test_command_from_file = "spring rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_command = "spring rspec --color --format progress --no-drb --order random " . a:filename
 
       " Spring within bundler
       elseif match(system('bundle exec spring status'), 'Spring is running') >= 0
         let smartest_test_description = "Using Spring with bundler"
-        let test_command_from_file = "bundle exec spring rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_command = "bundle exec spring rspec --color --format progress --no-drb --order random " . a:filename
 
       " bundle exec
       elseif filereadable("Gemfile")
@@ -265,13 +265,13 @@ function! RunTests(filename)
       " pure rspec
       else
         let smartest_test_description = "Using vanilla rspec"
-        let test_command_from_file = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+        let smartest_test_command = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
       end
 
     " Everything else
     else
       let smartest_test_description = "Using vanilla rspec outside Rails"
-      let test_command_from_file = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
+      let smartest_test_command = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
     end
   " ELIXIR
   elseif match(a:filename, '\(._test.ex\|_test.exs\)') >= 0
@@ -280,18 +280,18 @@ function! RunTests(filename)
     if match(a:filename, '\(._test.exs\)') >= 0
       " Mix
       let smartest_test_description = "Using ExUnit with Mix"
-      let test_command_from_file = "mix test " . a:filename
+      let smartest_test_command = "mix test " . a:filename
     else
       " ExUnit
       let smartest_test_description = "Using ExUnit outside Mix"
-      let test_command_from_file = "elixir " . a:filename
+      let smartest_test_command = "elixir " . a:filename
     end
   " SCALA
   elseif match(a:filename, '\(.Spec.scala\|Test.scala\)') >= 0
     let smartest_test_context = "scala"
 
     let smartest_test_description = "Using activator test-only option"
-    let test_command_from_file = "activator 'testOnly *." . expand('%:t:r') . "'"
+    let smartest_test_command = "activator 'testOnly *." . expand('%:t:r') . "'"
 
   " JAVA
   "
@@ -311,7 +311,7 @@ function! RunTests(filename)
     "endfor
 
     "echo "X" . test_class_name
-    " let test_command_from_file = "-Dtest=" . expand('%:t:r') . "'"
+    " let smartest_test_command = "-Dtest=" . expand('%:t:r') . "'"
     let class_name = "-Dtest=" . expand('%:t:r') . "'"
     let target_parameters = "-Dtest=" . expand('%:t:r') . "'"
   end
@@ -351,6 +351,7 @@ function! RunTests(filename)
     endif
   else
     silent exec ":!echo " . smartest_test_description
+    silent exec ":!echo " . smartest_test_command
     exec ":!" . smartest_test_command
   endif
 
