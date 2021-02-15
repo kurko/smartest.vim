@@ -27,7 +27,7 @@ function! RunTestFile(...)
   endif
 
   " Run the tests for the previously-marked file.
-  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\|Test.java\)')
+  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|.test.ts\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\|Test.java\)')
 
   if in_test_file >= 0
     call SetTestFile(command_suffix)
@@ -80,16 +80,44 @@ function! RunTests(filename)
 
   let isolated_spec = match(a:filename, ':\d\+$') > 0
   let cursor_line = substitute(matchstr(a:filename, ':\d\+$'), ":", "", "")
+  let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
 
   let smartest_test_description = ""
   let smartest_test_context = ""
   let smartest_test_command = ""
 
   " JAVASCRIPT
-  if match(a:filename, '\(._test.js\|_spec.js\)') >= 0
+  if match(a:filename, '\(.test.ts\|._test.js\|_spec.js\)') >= 0
     let smartest_test_context = "javascript"
-
     let filename_for_spec = substitute(a:filename, "spec/javascripts/", "", "")
+
+    " Running isolated test
+    "
+    " Let's find out what's the current test but looking at the previous lines
+    " and finding a pattern like `test('some description', ...`. We'll take that
+    " description later and apply it in the command line.
+    let test_method = ""
+    if isolated_spec > 0
+      let current_line = cursor_line
+      while current_line > cursor_line - 100
+        let line_string = GetLineFromFile(current_line, filename_without_line_number)
+        " matches 'some test' in 'test("some test", () => {})'
+        let test_method = matchstr(line_string, '\v(it|test)\([''"]\zs.*\ze[''"],')
+
+        " If it finds a test method, gets out of the loop
+        if test_method != ""
+          break
+        endif
+
+        if current_line == 0
+          break
+        endif
+
+        " We go backwards until we find a test
+        let current_line -= 1
+      endwhile
+    endif
+
     " Within a Ruby on Rails project
     "
     " Konacha
@@ -112,15 +140,31 @@ function! RunTests(filename)
     elseif filereadable("tests/runner.js")
       call RunJsWithPhantomJs()
 
+    " Jest
+    "
+    " For individual tests, we add the -t option to the command.
+    elseif filereadable("jest.config.js")
+
+      if filereadable("yarn.lock")
+        let smartest_test_command = "yarn jest " . filename_without_line_number
+      else
+        let smartest_test_command = "npm run jest " . filename_without_line_number
+      endif
+
+      if test_method != ""
+        let smartest_test_description = "Running isolated test with Jest: " . test_method
+        let smartest_test_command = smartest_test_command . " -t \"" . test_method . "\""
+      else
+        let smartest_test_description = "Running file tests with Jest"
+      endif
+
     " Everything else (QUnit)
     else
-      "Rake
       let smartest_test_description = "I don't know how to run these JS tests :["
     endif
 
   " CUCUMBER
   elseif match(a:filename, '\(.feature\)') >= 0
-    let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
     let smartest_test_context = "cucumber"
 
     if filereadable("Gemfile")
@@ -133,7 +177,6 @@ function! RunTests(filename)
 
   " RUBY
   elseif match(a:filename, '\(._test.rb\|_spec.rb\)') >= 0
-    let filename_without_line_number = substitute(a:filename, ':\d\+$', '', '')
     let smartest_test_context = "ruby"
 
     " Minitest?
@@ -273,6 +316,7 @@ function! RunTests(filename)
       let smartest_test_description = "Using vanilla rspec outside Rails"
       let smartest_test_command = "rspec -O ~/.rspec --color --format progress --no-drb --order random " . a:filename
     end
+
   " ELIXIR
   elseif match(a:filename, '\(._test.ex\|_test.exs\)') >= 0
     let smartest_test_context = "elixir"
