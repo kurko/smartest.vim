@@ -27,7 +27,7 @@ function! RunTestFile(...)
   endif
 
   " Run the tests for the previously-marked file.
-  let in_test_file = match(expand("%"), '\(.feature\|_spec.rb\|_test.rb\|_test.js\|.test.ts\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\|Test.java\)')
+  let in_test_file = match(expand("%"), '\(test\/.*\|test\/.*\|.feature\|_spec.rb\|_test.rb\|test.js\|test.ts\|_spec.js\|_test.exs\|_test.ex\|Spec.scala\|Test.scala\|Test.java\)')
 
   if in_test_file >= 0
     call SetTestFile(command_suffix)
@@ -87,7 +87,7 @@ function! RunTests(filename)
   let smartest_test_command = ""
 
   " JAVASCRIPT
-  if match(a:filename, '\(.test.ts\|._test.js\|_spec.js\)') >= 0
+  if match(a:filename, '\(test\/.*\.ts\|.test.ts\|.test.js\|spec.js\)') >= 0
     let smartest_test_context = "javascript"
     let filename_for_spec = substitute(a:filename, "spec/javascripts/", "", "")
 
@@ -143,19 +143,41 @@ function! RunTests(filename)
     " Jest
     "
     " For individual tests, we add the -t option to the command.
-    elseif filereadable("jest.config.js")
+    elseif filereadable("package.json")
+      let package_manager_runner = ""
+      let test_framework = ""
+      let single_test_filter = ""
 
       if filereadable("yarn.lock")
-        let smartest_test_command = "yarn jest " . filename_without_line_number
+        let package_manager_runner = "yarn"
       else
-        let smartest_test_command = "npm run jest " . filename_without_line_number
+        let package_manager_runner = "npm run"
       endif
+
+      if filereadable("jest.config.js")
+        let test_framework = "jest"
+        let smartest_test_command = smartest_test_command . " -t \"" . test_method . "\""
+        if test_method != ""
+          let single_test_filter = " -t \"" . test_method . "\""
+        endif
+      elseif match(readfile("package.json"), "mocha")
+        let test_framework = "mocha --exit --colors"
+        if test_method != ""
+          let single_test_filter = " --grep \"" . test_method . "\""
+        endif
+      endif
+
+      let smartest_test_command = package_manager_runner . " " . test_framework . " " . filename_without_line_number
 
       if test_method != ""
         let smartest_test_description = "Running isolated test with Jest: " . test_method
-        let smartest_test_command = smartest_test_command . " -t \"" . test_method . "\""
+      endif
+
+      if test_method != ""
+        let smartest_test_description = "Running isolated test: " . test_method
+        let smartest_test_command = smartest_test_command . " " . single_test_filter
       else
-        let smartest_test_description = "Running file tests with Jest"
+        let smartest_test_description = "Running file tests"
       endif
 
     " Everything else (QUnit)
@@ -370,8 +392,14 @@ function! RunTests(filename)
       " Replaces $smartest_test_command in the file with whatever smartest figured out as
       " expected.
       let final_test_command = substitute(test_command_from_file, "$smartest_test_command", smartest_test_command, "g")
-      let final_test_command = substitute(final_test_command, "$filename", a:filename, "g")
+      let final_test_command = substitute(final_test_command, "$filename", filename_without_line_number, "g")
+      let final_test_command = substitute(final_test_command, "$filename_with_line_number", a:filename, "g")
+      let final_test_command = substitute(final_test_command, "$line_number", cursor_line, "g")
 
+      " Replaces $test_name in .smartest.* with the name of the test name, so it
+      " can be used with grep.
+      let final_test_command = substitute(final_test_command, "$test_name", test_method, "g")
+      
       " These lines were removed because when the user gets back to Vim, they
       " would have to press a button to get back to code.
       "
@@ -384,11 +412,12 @@ function! RunTests(filename)
       "
       " silent exec ":!echo " . smartest_test_description
       " shellescape will write with quotes to stdout
-      " silent exec "!echo Running: " . shellescape(final_test_command, 1)
+      silent exec "!echo Running: " . shellescape(final_test_command, 1)
       " exec ":!" . final_test_command
       "
 
-      silent exec "!" . final_test_command
+      " Using silent keyword will avoid the `Hit ENTER to continue`
+      exec "!" . final_test_command
       redraw!
     else
       echo "Don't know how to run tests. Define .smartest." . smartest_test_context
