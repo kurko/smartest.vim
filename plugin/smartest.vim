@@ -392,14 +392,14 @@ function! RunTests(filename)
       " Replaces $smartest_test_command in the file with whatever smartest figured out as
       " expected.
       let final_test_command = substitute(test_command_from_file, "$smartest_test_command", smartest_test_command, "g")
-      let final_test_command = substitute(final_test_command, "$filename", filename_without_line_number, "g")
       let final_test_command = substitute(final_test_command, "$filename_with_line_number", a:filename, "g")
+      let final_test_command = substitute(final_test_command, "$filename", filename_without_line_number, "g")
       let final_test_command = substitute(final_test_command, "$line_number", cursor_line, "g")
 
       " Replaces $test_name in .smartest.* with the name of the test name, so it
       " can be used with grep.
       let final_test_command = substitute(final_test_command, "$test_name", test_method, "g")
-      
+
       " These lines were removed because when the user gets back to Vim, they
       " would have to press a button to get back to code.
       "
