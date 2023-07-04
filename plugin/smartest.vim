@@ -416,8 +416,17 @@ function! RunTests(filename)
       " exec ":!" . final_test_command
       "
 
-      " Using silent keyword will avoid the `Hit ENTER to continue`
-      exec "!" . final_test_command
+      " Experimenting with fixing Neovim terminal colors by using :term instead of
+      " :!
+      "
+      " if has("nvim") " nvim
+      "   " Neovim has a bug in which :! doesn't output terminal colors
+      "   exec "term " . final_test_command
+      " else
+        " Using silent keyword will avoid the `Hit ENTER to continue`
+        exec "!" . final_test_command
+      " endif
+
       redraw!
     else
       echo "Don't know how to run tests. Define .smartest." . smartest_test_context
@@ -425,7 +434,22 @@ function! RunTests(filename)
   else
     silent exec ":!echo " . smartest_test_description
     silent exec ":!echo " . smartest_test_command
-    exec ":!" . smartest_test_command
+
+    " Experimenting with fixing Neovim terminal colors by using :term instead of
+    " :!
+    "
+    " if has("nvim") " nvim
+    "   " Neovim has a bug in which :! doesn't output terminal colors
+    "   " exec ":split | term " . smartest_test_command
+
+    "   let term_position = get(g:, 'test#neovim#term_position', 'botright')
+    "   execute term_position . ' new'
+    "   call termopen(smartest_test_command)
+    "   au BufDelete <buffer> wincmd p " switch back to last window
+    "   startinsert
+    " else
+      exec ":!" . smartest_test_command
+    " endif
   endif
 
 endfunction
