@@ -186,7 +186,7 @@ function! RunTests(filename)
     endif
 
   " CUCUMBER
-  elseif match(a:filename, '\(.feature\)') >= 0
+  elseif match(a:filename, '\(.feature\)') >= 0 && filereadable("Gemfile") && match(readfile("Gemfile"), "cucumber") >= 0
     let smartest_test_context = "cucumber"
 
     if filereadable("Gemfile")
