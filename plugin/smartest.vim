@@ -306,6 +306,7 @@ function! RunTests(filename)
     " elseif match(readfile(filename_without_line_number), '\("spec_helper\|''spec_helper\|rails_helper\|capybara_helper\|acceptance_spec_helper\|acceptance_helper\)') >= 0
     elseif match(filename_without_line_number, '\(_spec.rb\)') >= 0
       let smartest_test_context = "ruby"
+      let test_method = ""
 
       " Zeus
       if glob(".zeus.sock") != "" && filereadable("Gemfile") >= 1
@@ -387,7 +388,8 @@ function! RunTests(filename)
   " files and we will show an error in case some is missing.
   if glob('.smartest.*') !=#""
     if filereadable(".smartest." . smartest_test_context)
-      let test_command_from_file = readfile(".smartest." . smartest_test_context)[0]
+      let command_file = readfile(".smartest." . smartest_test_context) " [0]
+      let test_command_from_file = join(command_file, "\n")
 
       " Replaces $smartest_test_command in the file with whatever smartest figured out as
       " expected.
