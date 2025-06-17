@@ -160,6 +160,18 @@ function! RunTests(filename)
         if test_method != ""
           let single_test_filter = " -t \"" . test_method . "\""
         endif
+      elseif match(readfile("package.json"), "\"test\"")
+        if match(readfile("package.json"), "vitest")
+          let test_framework = "test"
+          if test_method != ""
+            let single_test_filter = " -- -t \"" . test_method . "\""
+          endif
+        else
+          let test_framework = "test"
+          if test_method != ""
+            let single_test_filter = " -- --grep \"" . test_method . "\""
+          endif
+        endif
       elseif match(readfile("package.json"), "mocha")
         let test_framework = "mocha --exit --colors"
         if test_method != ""
@@ -418,18 +430,22 @@ function! RunTests(filename)
       " exec ":!" . final_test_command
       "
 
-      " Experimenting with fixing Neovim terminal colors by using :term instead of
-      " :!
+      " FIXME - experimenting with fixing Neovim terminal colors by using :term
+      " instead of :!
       "
       " if has("nvim") " nvim
       "   " Neovim has a bug in which :! doesn't output terminal colors
-      "   exec "term " . final_test_command
+      "   "   exec "term " . final_test_command
+      "   " execute 'terminal bash -ic "' . shellescape(final_test_command) . '"'
+      "   " execute 'terminal bash -ic "' . shellescape(final_test_command) . '"'
+      "   " execute 'split | terminal bash -ic "' . final_test_command . '"'
+      "   execute "split | terminal bash -ic " . shellescape(final_test_command) . ""
+      "   redraw!
       " else
         " Using silent keyword will avoid the `Hit ENTER to continue`
         exec "!" . final_test_command
       " endif
 
-      redraw!
     else
       echo "Don't know how to run tests. Define .smartest." . smartest_test_context
     endif
